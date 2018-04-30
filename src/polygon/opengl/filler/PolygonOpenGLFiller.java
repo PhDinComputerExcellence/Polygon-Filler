@@ -5,6 +5,8 @@
  */
 package polygon.opengl.filler;
 
+import java.awt.Point;
+import java.awt.geom.AffineTransform;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -51,7 +53,7 @@ e.printStackTrace();}
         glClearColor(0.0f,0.0f,0.0f,0.0f);
         glMatrixMode(GL_PROJECTION); 
         glLoadIdentity();
-        glOrtho(-320, 320, -240, 480, 1, -1);
+        glOrtho(-1280, 1280, -960, 960, 1, -1);
         glMatrixMode(GL_MODELVIEW);
         glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
     }
@@ -64,18 +66,18 @@ while (!Display.isCloseRequested() && !Keyboard.isKeyDown(Keyboard.KEY_ESCAPE)) 
         glColor3f(1.0f,1.0f,0.0f);
         glPointSize(1);
         glBegin(GL_POINTS);
-        File file = new File("Test.txt");
+        File file = new File("coordinates.txt");
         BufferedReader br = new BufferedReader(new FileReader(file));
         Scanner sc = new Scanner(br);
         ArrayList<Node> list = new ArrayList<Node>();
         String check = "";
         String hold = "";
+        ArrayList<String> holdForm = new ArrayList<String>();
         char c;
         Scanner b;
         boolean Transformation = false;
             boolean newPoly = false;
         while (sc.hasNext()){
-            ArrayList<String> holdForm;
             if (!newPoly){
             hold = sc.nextLine();
             c = hold.charAt(0);
@@ -102,24 +104,26 @@ while (!Display.isCloseRequested() && !Keyboard.isKeyDown(Keyboard.KEY_ESCAPE)) 
                 
             } else if (c == 'T'){
                 Transformation = true;
-                holdForm = new ArrayList<String>();
+                holdForm.removeAll(holdForm);
                 while (sc.hasNext()){
                     check = sc.nextLine();
                     if (check.charAt(0)=='P'){
+                        //Take off tranaforms if you don't want the transforms
+                        Transform(list, holdForm);
+                        Fill(list);
                         newPoly = true;
-                        
+                        list = new ArrayList<Node>();
                         break;
                     }
                     holdForm.add(check);
                     
                 }
-                Transform(list, holdForm);
-                for (int i = 0; i < list.size(); i++){
-                    System.out.println(list.get(i).x + " And " + list.get(i).y);
-                }
-                Fill(list);
+                
             }  
         }
+        //Take off tranaforms if you don't want the transforms
+       Transform(list, holdForm);
+        Fill(list);
         System.out.println("Done");
      //   Fill(list); 
         glEnd();
@@ -132,9 +136,8 @@ while (!Display.isCloseRequested() && !Keyboard.isKeyDown(Keyboard.KEY_ESCAPE)) 
     }
 
     public void Transform(ArrayList<Node> list, ArrayList<String> action){
-        System.out.println("Stuff");
         
-        for (int i = action.size()-1; i >= 0; i--){
+        for (int i = 0; i <action.size(); i++){
             if (action.get(i).charAt(0) == 'r'){
                 Scanner sc = new Scanner(action.get(i).substring(1));
                 Rotate(list, sc.nextFloat(), sc.nextFloat(), sc.nextFloat());
@@ -142,11 +145,10 @@ while (!Display.isCloseRequested() && !Keyboard.isKeyDown(Keyboard.KEY_ESCAPE)) 
                 Scanner sc = new Scanner(action.get(i).substring(1));
                 Translate(list, sc.nextFloat(), sc.nextFloat());
             } else {
-                Scanner sc = new Scanner(action.get(i).substring(1));
+               Scanner sc = new Scanner(action.get(i).substring(1));
                 Scaling(list, sc.nextFloat(), sc.nextFloat(),sc.nextFloat(),sc.nextFloat());
             }
         }
-        System.out.println("XD");
         
         
     }
@@ -261,8 +263,12 @@ while (!Display.isCloseRequested() && !Keyboard.isKeyDown(Keyboard.KEY_ESCAPE)) 
         float centerx = getCenterx(list);
         float centery = getCentery(list);
         for (int i = 0 ; i < list.size(); i++){
-            list.get(i).x = (float) (pivot +(list.get(i).x - pivot)*Math.cos(degree)- (list.get(i).y-pivot2)*Math.sin(degree));
-            list.get(i).y = (float) (pivot2 +(list.get(i).x - pivot)*Math.sin(degree)+ (list.get(i).y-pivot2)*Math.cos(degree));
+            float[] holder = {list.get(i).x, list.get(i).y};
+            AffineTransform.getRotateInstance(Math.toRadians(degree), pivot, pivot2).transform(holder, 0, holder, 0, 1);
+            list.get(i).x = holder[0];
+            list.get(i).y = holder[1];
+//            list.get(i).x = (int)(pivot + (list.get(i).x - pivot)*Math.cos(degree) - (list.get(i).y - pivot2)*Math.sin(degree));
+//            list.get(i).y = (int)(pivot2 + (list.get(i).x -pivot)*Math.sin(degree) + (list.get(i).y - pivot2)*Math.cos(degree));
         }
     }
     
@@ -270,8 +276,8 @@ while (!Display.isCloseRequested() && !Keyboard.isKeyDown(Keyboard.KEY_ESCAPE)) 
         float centerx = getCenterx(list);
         float centery = getCentery(list);
         for (int i = 0 ; i < list.size(); i++){
-            list.get(i).x = ((list.get(i).x - pivot)*scale)+pivot;
-            list.get(i).y = ((list.get(i).y - pivot2)*scale2)+pivot2;
+            list.get(i).x = Math.round(((list.get(i).x - pivot)*scale)+pivot);
+            list.get(i).y = Math.round(((list.get(i).y - pivot2)*scale2)+pivot2);
         }
     }
 
@@ -357,7 +363,6 @@ while (!Display.isCloseRequested() && !Keyboard.isKeyDown(Keyboard.KEY_ESCAPE)) 
             for (int i = 0; i < All.size(); i++){
                 if (i==0){
                     if (checkIf(All.get(0))){
-                        System.out.println("1");
                         Global.add(All.get(0));
                     }
                 } else {
@@ -375,10 +380,10 @@ while (!Display.isCloseRequested() && !Keyboard.isKeyDown(Keyboard.KEY_ESCAPE)) 
                     }
                 }
             }
-            System.out.println("Stop");
-            for (int i = 0; i < Global.size(); i++){
-            System.out.println(Global.get(i).yMin);
-        }
+            
+//            for (int i = 0; i < Global.size(); i++){
+//            System.out.println(Global.get(i).yMin);
+//        }
             //Active Table Start
             float Scanline = Global.get(0).yMin;
             boolean Parity = true;
@@ -392,10 +397,7 @@ while (!Display.isCloseRequested() && !Keyboard.isKeyDown(Keyboard.KEY_ESCAPE)) 
                     }
                 }
             }
-            
             for (int i = (int) Scanline; i < max; i++){
-                System.out.println(i);
-                System.out.println(max);
                 for (int j = 0; j < Global.size(); ){
                     if (Global.get(j).yMin!=i){
                         break;
@@ -404,9 +406,9 @@ while (!Display.isCloseRequested() && !Keyboard.isKeyDown(Keyboard.KEY_ESCAPE)) 
                         Global.remove(j);
                     }
                 }
-                for (int z = 0; z < Global.size(); z++){
-                    System.out.println(Global.get(z).yMin);
-                }
+//                for (int z = 0; z < Global.size(); z++){
+//                    System.out.println(Global.get(z).yMin);
+//                }
                 
                  Collections.sort(Active, new Comparator<Edge>(){
                     @Override
@@ -418,14 +420,12 @@ while (!Display.isCloseRequested() && !Keyboard.isKeyDown(Keyboard.KEY_ESCAPE)) 
                 
                 for (int j = Active.size()-1; j >-1; j--){
                     if (Active.get(j).yMax <= i+1){
-                        System.out.println(Active.get(j).yMax + " removed");
                         Active.remove(j);
                     }
                 }
                                
             }
             
-            System.out.println("Finish");
             
             
         
@@ -433,7 +433,6 @@ while (!Display.isCloseRequested() && !Keyboard.isKeyDown(Keyboard.KEY_ESCAPE)) 
    
    public void FillStuff(ArrayList<Edge> list, int y){
        boolean Parity = false;
-       
 //       for (int i = 0; i < list.size(); i++){
 //           System.out.println(list.get(i).yMax);
 //       }
